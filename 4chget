@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# 4chget - a simple script for downloading 4chan images
+#            by Greg Naughton, (c) 2011
+#
+
+if [ ! $1 ]; then
+    echo usage: $(basename $0)" <4chan url> <dir to save img dump>"
+    echo "  1st arg: 4chan page URL"
+    echo "  2nd arg (optional): directory to dump images to"
+    echo "      if dir doesn't exist, it'll be created"
+    echo "  if no dir provided, images will be dumped into current path"
+    exit
+fi
+
+OUTDIR=$(pwd)
+if [ $2 ]; then
+    OUTDIR=$2
+    if [ ! -d $OUTDIR ]; then
+        echo directory: \"$OUTDIR\" doesn\'t exist. making it.
+        mkdir $OUTDIR
+    fi
+    cd $OUTDIR
+else
+    echo warning: images will be saved to \"$OUTDIR\" "Proceed [y/N]? "
+    read ans;
+    if [ $ans != 'y' ] && [ $ans != 'Y' ]; then
+        echo aborting...
+        exit;
+    fi 
+fi
+echo saving images to \"$OUTDIR\"
+
+COUNT=0
+SKIP=0
+
+URLS=`curl $1` 
+if echo "$URLS" | grep -q "404 - Not Found"; then
+    echo page 404\'d, no longer exists
+    exit;
+fi
+
+URLS=`echo $URLS | tr ' ' '\n' | grep -E http:\/\/images.4chan.org\/[a-z]+\/src\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
+
+
+for line in ${URLS};
+do 
+    pic=`echo $line | sed -r 's/http:\/\/images.4chan.org\/[a-z]+\/src\///g'`
+    if [ ! -e $pic ]; then
+        let COUNT="${COUNT}+1"
+        echo $COUNT
+        wget -c $line
+    else
+        let SKIP="${SKIP}+1"
+        echo skipping "${pic} (#${SKIP})", already have it 
+    fi
+done 
+
+if [ $SKIP -gt 0 ]; then
+    echo -n "skipped getting $SKIP files, "
+fi
+
+if [ $COUNT -gt 0 ]; then
+    echo got $COUNT new images.
+else
+    echo there were no new images
+fi

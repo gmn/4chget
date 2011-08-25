@@ -1,0 +1,46 @@
+
+4chget
+
+A super simple bash script to download images from a 4chan thread.  
+
+Usage is simple: copy the url from the browser to the clip board of any 
+4chan thread; paste it into the command line like such:
+
+~$ 4chget http://boards.4chan.org/fit/res/4820056 directory_to_dl_to
+
+Optionally, append a name of a directory in which to save the images to.
+If the directory name supplied doesn't exist, it will be created. Leave the
+dirname argument off, and it will dump the images to the current working
+directory.
+
+The script itself runs only on a *NIX environment with the following 
+(commonly available, and usually pre-installed, except wget) tools installed:
+    curl
+    wget
+    tr
+    sed
+    grep
+    uniq
+    bash (or similar)
+
+
+All work is the original creation of Greg Naughton (C) 2011-, but is placed
+into the public domain by whatever license you choose, so long as you keep
+the author's name intact, along with the source file.
+
+
+INSTALLATION INSTRUCTIONS:
+
+to install on a unix environment, such as your Mac or Linux box, type:
+
+~$ sudo cp 4chget /usr/bin
+
+That's it. Have fun!  4chan isn't just for Windoze anymore.
+
+
+TODO
+- replace wget with curl since it's more likely to be pre-installed on most
+  systems. wget is not.
+- an option to download the page text as well, that re-writes the img urls
+  to point to the local files.
+
