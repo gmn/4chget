@@ -49,7 +49,7 @@ do
     if [ ! -e $pic ]; then
         let COUNT="${COUNT}+1"
         echo $COUNT
-        wget -c $line
+        curl $line -o $pic
     else
         let SKIP="${SKIP}+1"
         echo skipping "${pic} (#${SKIP})", already have it 
