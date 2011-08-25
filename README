@@ -8,10 +8,10 @@ Usage is simple: copy the url from the browser to the clip board of any
 
 ~$ 4chget http://boards.4chan.org/fit/res/4820056 directory_to_dl_to
 
-Optionally, append a name of a directory in which to save the images to.
-If the directory name supplied doesn't exist, it will be created. Leave the
+Optionally, append a name of a directory to save the images to.
+If the supplied directory name doesn't exist, it will be created. Leave the
 dirname argument off, and it will dump the images to the current working
-directory.
+directory. 
 
 The script itself runs only on a *NIX environment, and uses the following 
 (usually pre-installed) tools:
@@ -34,7 +34,7 @@ to install on a unix environment, such as your Mac or Linux box, type:
 
 ~$ sudo cp 4chget /usr/bin
 
-That's it. Have fun!  4chan isn't just for Windoze anymore.
+That's it. Have fun!  4chan isn't just for Windozefags.
 
 
 TODO

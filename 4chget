@@ -34,6 +34,9 @@ echo saving images to \"$OUTDIR\"
 COUNT=0
 SKIP=0
 
+# default to wget if it's available
+if which wget >/dev/null; then HAVE_WGET=1; fi
+
 URLS=`curl $1` 
 if echo "$URLS" | grep -q "404 - Not Found"; then
     echo page 404\'d, no longer exists
@@ -49,7 +52,11 @@ do
     if [ ! -e $pic ]; then
         let COUNT="${COUNT}+1"
         echo $COUNT
-        curl $line -o $pic
+        if [ $HAVE_WGET ]; then
+            wget -c $line
+        else
+            curl $line -o $pic
+        fi
     else
         let SKIP="${SKIP}+1"
         echo skipping "${pic} (#${SKIP})", already have it 
