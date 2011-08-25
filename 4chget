@@ -54,7 +54,7 @@ if which wget >/dev/null; then HAVE_WGET=1; fi
 # 404 - proceed no further to prevent overwrites 
 PAGE=`curl $ARG1` 
 if echo "$PAGE" | grep -q "404 - Not Found"; then
-    echo -e "${BIRed}page 404'd, no longer exists${Color_Off}"
+    echo -e "${BIRed}Page 404'd, no longer exists${Color_Off}"
     exit;
 fi
 
@@ -106,7 +106,7 @@ if [ $SKIP -gt 0 ]; then
 fi
 
 if [ $COUNT -gt 0 ]; then
-    echo -e "got ${BIGreen}$COUNT${Color_Off} new images."
+    echo -e "got ${BICyan}$COUNT${Color_Off} new images."
 else
-    echo -e "there were ${BIRed}no${Color_Off} new images."
+    echo -e "there were ${BIRed}NO${Color_Off} new images."
 fi
