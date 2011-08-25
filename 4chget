@@ -4,6 +4,17 @@
 #            by Greg Naughton, (c) 2011
 #
 
+
+Color_Off='\e[0m'       # reset color
+BIRed='\e[1;91m'        # Red
+BIGreen='\e[1;92m'      # Green
+BIYellow='\e[1;93m'     # Yellow
+BIBlue='\e[1;94m'       # Blue
+BIPurple='\e[1;95m'     # Purple
+BICyan='\e[1;96m'       # Cyan
+BIWhite='\e[1;97m'      # White
+
+
 if [ ! $1 ]; then
     echo usage: $(basename $0)" [-A] <4chan url> <dir to save img dump>"
     echo "  1st arg: 4chan page URL"
@@ -40,10 +51,10 @@ SKIP=0
 # default to wget if it's available
 if which wget >/dev/null; then HAVE_WGET=1; fi
 
-
+# 404 - proceed no further to prevent overwrites 
 PAGE=`curl $ARG1` 
 if echo "$PAGE" | grep -q "404 - Not Found"; then
-    echo page 404\'d, no longer exists
+    echo -e "${BIRed}page 404'd, no longer exists${Color_Off}"
     exit;
 fi
 
@@ -91,11 +102,11 @@ do
 done 
 
 if [ $SKIP -gt 0 ]; then
-    echo -n "skipped getting $SKIP files, "
+    echo -n -e "skipped getting ${BIPurple}$SKIP${Color_Off} files, "
 fi
 
 if [ $COUNT -gt 0 ]; then
-    echo got $COUNT new images.
+    echo -e "got ${BIGreen}$COUNT${Color_Off} new images."
 else
-    echo there were no new images
+    echo -e "there were ${BIRed}no${Color_Off} new images."
 fi

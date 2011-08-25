@@ -25,6 +25,8 @@ The script itself runs only on a *NIX environment, and uses the following
     uniq
 
 
+Probably the coolest single feature of 4chget is that you can run it repeatedly using your bash history (the up arrow), to check if any new stuff has been added to the thread.  4chget will only download the new images that show up.
+
 All work is the original creation of Greg Naughton (C) 2011-, but is placed
 into the public domain by whatever license you choose, so long as you keep
 the author's name intact, along with the source file.
@@ -39,4 +41,6 @@ to install on a unix environment, such as your Mac or Linux box, type:
 That's it. Have fun!  4chan isn't just for Windozefags.
 
 
+TODO
+- fetch filesize to continue/complete partial image downloads
 
