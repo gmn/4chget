@@ -5,17 +5,21 @@
 #
 
 if [ ! $1 ]; then
-    echo usage: $(basename $0)" <4chan url> <dir to save img dump>"
+    echo usage: $(basename $0)" [-A] <4chan url> <dir to save img dump>"
     echo "  1st arg: 4chan page URL"
     echo "  2nd arg (optional): directory to dump images to"
     echo "      if dir doesn't exist, it'll be created"
     echo "  if no dir provided, images will be dumped into current path"
+    echo "  if -A option is used, the entire page will be archived"
     exit
 fi
 
+ARG1=$1; ARG2=$2
+if [ $1 == "-A" ]; then ARCHIVE=1; ARG1=$2; ARG2=$3; fi
+
 OUTDIR=$(pwd)
-if [ $2 ]; then
-    OUTDIR=$2
+if [ $ARG2 ]; then
+    OUTDIR=$ARG2
     if [ ! -d $OUTDIR ]; then
         echo directory: \"$OUTDIR\" doesn\'t exist. making it.
         mkdir $OUTDIR
@@ -37,14 +41,38 @@ SKIP=0
 # default to wget if it's available
 if which wget >/dev/null; then HAVE_WGET=1; fi
 
-URLS=`curl $1` 
-if echo "$URLS" | grep -q "404 - Not Found"; then
+
+PAGE=`curl $ARG1` 
+if echo "$PAGE" | grep -q "404 - Not Found"; then
     echo page 404\'d, no longer exists
     exit;
 fi
 
-URLS=`echo $URLS | tr ' ' '\n' | grep -E http:\/\/images.4chan.org\/[a-z]+\/src\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
+URLS=`echo $PAGE | tr ' ' '\n' | grep -E http:\/\/images.4chan.org\/[a-z]+\/src\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
 
+#
+# ARCHIVE option downloads html and thumbnails as well
+#
+if [ $ARCHIVE ]; then
+    echo Archiving Page with Thumbnails
+    PAGE_NUM=`echo $ARG1 | sed -E 's_http:\/\/boards.4chan.org\/[a-z]+\/res\/__'`
+    TDIR=thumbs_${PAGE_NUM}
+    THUMB_URLS=`echo $PAGE | tr ' ' '\n' | grep -E thumbs.4chan.org\/[a-z]+\/thumb\/[0-9]*s\.[jpg][pni][gf] | sed -e 's/src=//g' | uniq`
+    PAGE=`echo $PAGE | sed -E -e 's_http:\/\/images.4chan.org\/[a-z]+\/src\/__g' -e "s^http:\/\/[0-9]+.thumbs.4chan.org\/[a-z]+\/thumb^${TDIR}^g"`
+
+    OUT=`if [ $ARG2 ]; then echo $(basename $ARG2)--$PAGE_NUM; else echo $PAGE_NUM; fi`
+    echo $PAGE > $OUT.html
+
+    #get thumbs, to a directory named 'thumbs_page#'
+    if [ ! -e $TDIR ]; then mkdir ${TDIR}; fi
+
+    for thurl in $THUMB_URLS; do 
+        tname=`echo $thurl | sed -E 's_http:\/\/[0-9]+.thumbs.4chan.org\/[a-z]+\/thumb\/__'`
+        if [ ! -e ${TDIR}/${tname} ]; then
+            curl $thurl -o ${TDIR}/${tname}
+        fi
+    done
+fi
 
 for line in ${URLS};
 do 

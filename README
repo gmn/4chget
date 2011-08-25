@@ -13,6 +13,8 @@ If the supplied directory name doesn't exist, it will be created. Leave the
 dirname argument off, and it will dump the images to the current working
 directory. 
 
+If the '-A' option is applied, the entire page will be archived to the local folder along with thumbnails.
+
 The script itself runs only on a *NIX environment, and uses the following 
 (usually pre-installed) tools:
     bash (or similar)
@@ -37,11 +39,4 @@ to install on a unix environment, such as your Mac or Linux box, type:
 That's it. Have fun!  4chan isn't just for Windozefags.
 
 
-TODO
-
-X replace wget with curl since it's more likely to be pre-installed on most
-  systems. wget is not. (done)
-
-- an option to download the page text as well, that re-writes the img urls
-  to point to the local files.
 
