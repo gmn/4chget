@@ -8,9 +8,8 @@ if [ ! $1 ]; then
     echo usage: $(basename $0)" [-A] <4chan url> <dir to save img dump>"
     echo "  1st arg: 4chan page URL"
     echo "  2nd arg (optional): directory to dump images to"
-    echo "      if dir doesn't exist, it'll be created"
-    echo "  if no dir provided, images will be dumped into current path"
-    echo "  if -A option is used, the entire page will be archived"
+    echo "   * if no dir provided, images will be dumped into current path"
+    echo "   * if -A option is used, the entire page will be archived"
     exit
 fi
 
