@@ -48,3 +48,5 @@ TODO
 - fetch filesize to continue/complete partial image downloads
 - add '-P' flag to poll a source at regular intervals using the
     'while true; do ...' idiom
+- double check '-A' flag does existent file checking the way it does
+    when you don't use it. (doesn't download image if you already have it.) 

@@ -52,13 +52,15 @@ SKIP=0
 if which wget >/dev/null; then HAVE_WGET=1; fi
 
 # 404 - proceed no further to prevent overwrites 
-PAGE=`curl $ARG1` 
+PAGE=`curl -b -j -c ~/.4chan_cookies.txt $ARG1` 
 if echo "$PAGE" | grep -q "404 - Not Found"; then
     echo -e "${BIRed}Page 404'd, no longer exists${Color_Off}"
     exit;
 fi
 
-URLS=`echo $PAGE | tr ' ' '\n' | grep -E http:\/\/images.4chan.org\/[a-z]+\/src\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
+URLS=`echo $PAGE | tr ' ' '\n' | grep -E \/\/images.4chan.org\/[a-z]+\/src\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
+
+
 
 #
 # ARCHIVE option downloads html and thumbnails as well
@@ -68,7 +70,7 @@ if [ $ARCHIVE ]; then
     PAGE_NUM=`echo $ARG1 | sed -E 's_http:\/\/boards.4chan.org\/[a-z]+\/res\/__'`
     TDIR=thumbs_${PAGE_NUM}
     THUMB_URLS=`echo $PAGE | tr ' ' '\n' | grep -E thumbs.4chan.org\/[a-z]+\/thumb\/[0-9]*s\.[jpg][pni][gf] | sed -e 's/src=//g' | uniq`
-    PAGE=`echo $PAGE | sed -E -e 's_http:\/\/images.4chan.org\/[a-z]+\/src\/__g' -e "s^http:\/\/[0-9]+.thumbs.4chan.org\/[a-z]+\/thumb^${TDIR}^g"`
+    PAGE=`echo $PAGE | sed -E -e 's_\/\/images.4chan.org\/[a-z]+\/src\/__g' -e "s^\/\/[0-9]+.thumbs.4chan.org\/[a-z]+\/thumb^${TDIR}^g"`
 
     OUT=`if [ $ARG2 ]; then echo $(basename $ARG2)--$PAGE_NUM; else echo $PAGE_NUM; fi`
     echo $PAGE > $OUT.html
@@ -77,6 +79,8 @@ if [ $ARCHIVE ]; then
     if [ ! -e $TDIR ]; then mkdir ${TDIR}; fi
 
     for thurl in $THUMB_URLS; do 
+        echo "$thurl" | grep -q "http" || thurl='http:'$thurl
+        thurl=`echo "$thurl" | sed -e 's/\"//g'`
         tname=`echo $thurl | sed -E 's_http:\/\/[0-9]+.thumbs.4chan.org\/[a-z]+\/thumb\/__'`
         if [ ! -e ${TDIR}/${tname} ]; then
             curl $thurl -o ${TDIR}/${tname}
@@ -86,6 +90,7 @@ fi
 
 for line in ${URLS};
 do 
+    echo "$line" | grep -q "http" || line='http:'$line
     pic=`echo $line | sed -r 's/http:\/\/images.4chan.org\/[a-z]+\/src\///g'`
     if [ ! -e $pic ]; then
         let COUNT="${COUNT}+1"
