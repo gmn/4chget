@@ -53,7 +53,7 @@ if which wget >/dev/null; then HAVE_WGET=1; fi
 
 # 404 - proceed no further to prevent overwrites 
 PAGE=`curl -b -j -c ~/.4chan_cookies.txt $ARG1` 
-if echo "$PAGE" | grep -q "404 - Not Found"; then
+if echo "$PAGE" | grep -q "404 Not Found"; then
     echo -e "${BIRed}Page 404'd, no longer exists${Color_Off}"
     exit;
 fi
