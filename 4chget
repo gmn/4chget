@@ -27,23 +27,21 @@ fi
 ARG1=$1; ARG2=$2
 if [ $1 == "-A" ]; then ARCHIVE=1; ARG1=$2; ARG2=$3; fi
 
-OUTDIR=$(pwd)
+
+OUTDIR=`echo $ARG1 | sed -r -e 's/(.*)\///g'` # moot helpfully gives us thread names in the url now ^_^
+
 if [ $ARG2 ]; then
     OUTDIR=$ARG2
-    if [ ! -d $OUTDIR ]; then
-        echo directory: \"$OUTDIR\" doesn\'t exist. making it.
-        mkdir $OUTDIR
-    fi
-    cd $OUTDIR
-else
-    echo warning: images will be saved to \"$OUTDIR\" "Proceed [y/N]? "
-    read ans;
-    if [ $ans != 'y' ] && [ $ans != 'Y' ]; then
-        echo aborting...
-        exit;
-    fi 
 fi
+
+if [ ! -d $OUTDIR ]; then
+	echo directory: \"$OUTDIR\" doesn\'t exist. making it.
+	mkdir $OUTDIR
+fi
+cd $OUTDIR
+
 echo saving images to \"$OUTDIR\"
+
 
 COUNT=0
 SKIP=0
@@ -58,8 +56,12 @@ if echo "$PAGE" | grep -q "404 Not Found"; then
     exit;
 fi
 
-URLS=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
 
+URLS=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
+if [ $(echo $URLS | wc -l | awk '{print $1}') -le 2 ]; then
+	URLS=`echo $URLS | tr ' ' '\n'`
+fi
+echo $URLS > OUT
 
 #
 # ARCHIVE option downloads html and thumbnails as well
@@ -90,7 +92,9 @@ fi
 for line in ${URLS};
 do 
     echo "$line" | grep -q "http" || line='http:'$line
-    pic=`echo $line | sed -r 's/http:\/\/images.4chan.org\/[a-z]+\/src\///g'`
+
+    pic=`echo $line | sed -r 's^http:\/\/i.4cdn.org\/[a-z]+\/^^g'`
+
     if [ ! -e $pic ]; then
         let COUNT="${COUNT}+1"
         echo $COUNT
