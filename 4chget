@@ -58,8 +58,7 @@ if echo "$PAGE" | grep -q "404 Not Found"; then
     exit;
 fi
 
-URLS=`echo $PAGE | tr ' ' '\n' | grep -E \/\/images.4chan.org\/[a-z]+\/src\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
-
+URLS=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
 
 
 #
