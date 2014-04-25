@@ -61,7 +61,6 @@ URLS=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg][p
 if [ $(echo $URLS | wc -l | awk '{print $1}') -le 2 ]; then
 	URLS=`echo $URLS | tr ' ' '\n'`
 fi
-echo $URLS > OUT
 
 #
 # ARCHIVE option downloads html and thumbnails as well
