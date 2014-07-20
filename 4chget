@@ -47,7 +47,7 @@ COUNT=0
 SKIP=0
 
 # default to wget if it's available
-if which wget >/dev/null; then HAVE_WGET=1; fi
+if which wget >/dev/null; then HAVE_WGET=true; fi
 
 # 404 - proceed no further to prevent overwrites 
 PAGE=`curl -b -j -c ~/.4chan_cookies.txt $ARG1` 
@@ -57,10 +57,16 @@ if echo "$PAGE" | grep -q "404 Not Found"; then
 fi
 
 
-URLS=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
-if [ $(echo $URLS | wc -l | awk '{print $1}') -le 2 ]; then
-	URLS=`echo $URLS | tr ' ' '\n'`
+URLS_BIG=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
+if [ $(echo $URLS_BIG | wc -l | awk '{print $1}') -le 2 ]; then
+	URLS_BIG=`echo $URLS_BIG | tr ' ' '\n'`
 fi
+I=0
+for line in ${URLS_BIG}; do
+  URLS[$I]=$line
+  let I="$I+1"
+done
+
 
 #
 # ARCHIVE option downloads html and thumbnails as well
@@ -88,20 +94,76 @@ if [ $ARCHIVE ]; then
     done
 fi
 
-for line in ${URLS};
-do 
+function get_line() {
+    local line=$1
+    if $HAVE_WGET; then
+        wget -c $line
+    else
+        curl -C - $line -o $pic
+    fi
+}
+
+I=0
+MSG=false
+RESUMED=false
+TO_GET=0
+while [ $I -lt ${#URLS[*]} ]; 
+do
+
+    line=${URLS[$I]}
+
+    let NPONE="$I+1"
+
+    I=$NPONE
+
+    if [ $NPONE -lt ${#URLS[*]} ]; then
+        next_line=${URLS[$NPONE]}
+    else
+        next_line=''
+    fi
+
     echo "$line" | grep -q "http" || line='http:'$line
+    echo "$next_line" | grep -q "http" || next_line='http:'$next_line
 
     pic=`echo $line | sed -r 's^http:\/\/i.4cdn.org\/[a-z]+\/^^g'`
+    next_pic=`echo $next_line | sed -r 's^http:\/\/i.4cdn.org\/[a-z]+\/^^g'`
 
-    if [ ! -e $pic ]; then
-        let COUNT="${COUNT}+1"
-        echo $COUNT
-        if [ $HAVE_WGET ]; then
-            wget -c $line
-        else
-            curl $line -o $pic
+
+    # skip
+    if [ -e $pic ] && [ -e $next_pic ]; then
+        let SKIP="${SKIP}+1"
+        echo skipping "${pic} (#${SKIP})", already have it 
+
+    # reget last one, usually these might be interrupted
+    elif [ -e $pic ] && [ ! -e $next_pic ]; then
+        if ! $RESUMED ; then 
+            echo "regetting last pic, in case it wasn't complete"
+            RESUMED=true;
         fi
+
+        get_line $line
+
+    # any missing in the middle
+    elif [ -e $next_pic ] && [ ! -e $pic ] ; then
+        let COUNT="${COUNT}+1"
+        echo -e "${BIYellow}$COUNT${Color_Off}"
+        get_line $line
+
+    # continue getting missing at the end
+    elif [ ! -e $pic ] ; then
+
+        if ! $MSG; then 
+          let TO_GET="${#URLS[*]}-$I"; 
+          if [ $TO_GET -gt 0 ]; then
+            echo; echo -e " >>> ${BIYellow}$TO_GET${Color_Off} more images to get";echo;
+          fi
+          MSG=true; 
+        fi
+
+        let COUNT="${COUNT}+1"
+        echo -e "${BIYellow}$COUNT/$TO_GET${Color_Off}"
+        get_line $line
+
     else
         let SKIP="${SKIP}+1"
         echo skipping "${pic} (#${SKIP})", already have it 
