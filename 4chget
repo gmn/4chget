@@ -57,7 +57,7 @@ if echo "$PAGE" | grep -q "404 Not Found"; then
 fi
 
 
-URLS_BIG=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg][pni][gf] | sed -e 's/href="//g' -e 's/"//g' | uniq`
+URLS_BIG=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg\|png\|gif\|webm] | sed -e 's/href="//g' -e 's/"//g' | uniq`
 if [ $(echo $URLS_BIG | wc -l | awk '{print $1}') -le 2 ]; then
 	URLS_BIG=`echo $URLS_BIG | tr ' ' '\n'`
 fi
@@ -97,7 +97,7 @@ fi
 function get_line() {
     local line=$1
     if $HAVE_WGET; then
-        wget -c $line
+        wget -qc $line &
     else
         curl -C - $line -o $pic
     fi
