@@ -57,7 +57,7 @@ if echo "$PAGE" | grep -q "404 Not Found"; then
 fi
 
 
-URLS_BIG=`echo $PAGE | tr ' ' '\n' | grep -E \/\/is.4chan.org\/[a-z]+\/[0-9]*\.[jpg\|png\|gif\|webm] | sed -e 's/href="//g' -e 's/"//g' | uniq`
+URLS_BIG=`echo $PAGE | tr ' ' '\n' | grep -E \/\/i.4cdn.org\/[a-z]+\/[0-9]*\.[jpg\|png\|gif\|webm] | sed -e 's/href="//g' -e 's/"//g' | uniq`
 if [ $(echo $URLS_BIG | wc -l | awk '{print $1}') -le 2 ]; then
 	URLS_BIG=`echo $URLS_BIG | tr ' ' '\n'`
 fi
@@ -125,8 +125,8 @@ do
     echo "$line" | grep -q "http" || line='http:'$line
     echo "$next_line" | grep -q "http" || next_line='http:'$next_line
 
-    pic=`echo $line | sed -r 's^http:\/\/is.4chan.org\/[a-z]+\/^^g'`
-    next_pic=`echo $next_line | sed -r 's^http:\/\/is.4chan.org\/[a-z]+\/^^g'`
+    pic=`echo $line | sed -r 's^http:\/\/i.4cdn.org\/[a-z]+\/^^g'`
+    next_pic=`echo $next_line | sed -r 's^http:\/\/i.4cdn.org\/[a-z]+\/^^g'`
 
 
     # skip
