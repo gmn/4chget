@@ -114,8 +114,6 @@ do
 
     let NPONE="$I+1"
 
-    I=$NPONE
-
     if [ $NPONE -lt ${#URLS[*]} ]; then
         next_line=${URLS[$NPONE]}
     else
@@ -168,6 +166,8 @@ do
         let SKIP="${SKIP}+1"
         echo skipping "${pic} (#${SKIP})", already have it
     fi
+
+    I=$NPONE
 done
 
 if [ $SKIP -gt 0 ]; then
