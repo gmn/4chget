@@ -49,8 +49,8 @@ SKIP=0
 # default to wget if it's available
 if which wget >/dev/null; then HAVE_WGET=true; fi
 
-# 404 - proceed no further to prevent overwrites 
-PAGE=`curl -b -j -c ~/.4chan_cookies.txt $ARG1` 
+# 404 - proceed no further to prevent overwrites
+PAGE=`curl -b -j -c ~/.4chan_cookies.txt $ARG1`
 if echo "$PAGE" | grep -q "404 Not Found"; then
     echo -e "${BIRed}Page 404'd, no longer exists${Color_Off}"
     exit;
@@ -84,7 +84,7 @@ if [ $ARCHIVE ]; then
     #get thumbs, to a directory named 'thumbs_page#'
     if [ ! -e $TDIR ]; then mkdir ${TDIR}; fi
 
-    for thurl in $THUMB_URLS; do 
+    for thurl in $THUMB_URLS; do
         echo "$thurl" | grep -q "http" || thurl='http:'$thurl
         thurl=`echo "$thurl" | sed -e 's/\"//g'`
         tname=`echo $thurl | sed -E 's_http:\/\/[0-9]+.thumbs.4chan.org\/[a-z]+\/thumb\/__'`
@@ -107,7 +107,7 @@ I=0
 MSG=false
 RESUMED=false
 TO_GET=0
-while [ $I -lt ${#URLS[*]} ]; 
+while [ $I -lt ${#URLS[*]} ];
 do
 
     line=${URLS[$I]}
@@ -132,11 +132,11 @@ do
     # skip
     if [ -e $pic ] && [ -e $next_pic ]; then
         let SKIP="${SKIP}+1"
-        echo skipping "${pic} (#${SKIP})", already have it 
+        echo skipping "${pic} (#${SKIP})", already have it
 
     # reget last one, usually these might be interrupted
     elif [ -e $pic ] && [ ! -e $next_pic ]; then
-        if ! $RESUMED ; then 
+        if ! $RESUMED ; then
             echo "regetting last pic, in case it wasn't complete"
             RESUMED=true;
         fi
@@ -152,12 +152,12 @@ do
     # continue getting missing at the end
     elif [ ! -e $pic ] ; then
 
-        if ! $MSG; then 
-          let TO_GET="${#URLS[*]}-$I"; 
+        if ! $MSG; then
+          let TO_GET="${#URLS[*]}-$I";
           if [ $TO_GET -gt 0 ]; then
             echo; echo -e " >>> ${BIYellow}$TO_GET${Color_Off} more images to get";echo;
           fi
-          MSG=true; 
+          MSG=true;
         fi
 
         let COUNT="${COUNT}+1"
@@ -166,9 +166,9 @@ do
 
     else
         let SKIP="${SKIP}+1"
-        echo skipping "${pic} (#${SKIP})", already have it 
+        echo skipping "${pic} (#${SKIP})", already have it
     fi
-done 
+done
 
 if [ $SKIP -gt 0 ]; then
     echo -n -e "skipped getting ${BIPurple}$SKIP${Color_Off} files, "
