@@ -15,18 +15,20 @@ BICyan='\e[1;96m'       # Cyan
 BIWhite='\e[1;97m'      # White
 
 
-if [ ! $1 ]; then
+if [ ! $1 ] || [ "$1" == "--help" ]; then
     echo usage: $(basename $0)" [-A] <4chan url> <dir to save img dump>"
     echo "  1st arg: 4chan page URL"
     echo "  2nd arg (optional): directory to dump images to"
     echo "   * if no dir provided, images will be dumped into current path"
     echo "   * if -A option is used, the entire page will be archived"
+    echo "   * if -v option is used, verbose debug information is printed"
     exit
 fi
 
 ARG1=$1; ARG2=$2
-if [ $1 == "-A" ]; then ARCHIVE=1; ARG1=$2; ARG2=$3; fi
-
+if [ $1 == "-A" ]; then ARCHIVE=1; ARG1=$2; ARG2=$3;
+elif [ $1 == "-v" ]; then VERBOSE=1; ARG1=$2; ARG2=$3;
+fi
 
 OUTDIR=`echo $ARG1 | sed -r -e 's/(.*)\///g'` # moot helpfully gives us thread names in the url now ^_^
 
@@ -126,6 +128,17 @@ do
     pic=`echo $line | sed -r 's^http:\/\/i.4cdn.org\/[a-z]+\/^^g'`
     next_pic=`echo $next_line | sed -r 's^http:\/\/i.4cdn.org\/[a-z]+\/^^g'`
 
+    if [ "$VERBOSE" ]; then
+        echo
+        echo "------------------------"
+        echo "count $COUNT"
+        echo "NPONE $NPONE"
+        echo "TO_GET $TO_GET"
+        echo "pic $pic"
+        echo "next_pic $next_pic"
+        echo "#URLS ${#URLS[*]}"
+        echo
+    fi
 
     # skip
     if [ -e $pic ] && [ -e $next_pic ]; then
@@ -133,9 +146,10 @@ do
         echo skipping "${pic} (#${SKIP})", already have it
 
     # reget last one, usually these might be interrupted
-    elif [ -e $pic ] && [ ! -e $next_pic ]; then
+    elif [ -e $pic ] && [ ! -e $next_pic ] && [ ${NPONE} -ne ${#URLS[*]} ] ; then
         if ! $RESUMED ; then
-            echo "regetting last pic, in case it wasn't complete"
+            let SKIP="${SKIP}+1"
+            echo "regetting $pic (#$SKIP), in case it wasn't complete"
             RESUMED=true;
         fi
 
@@ -159,7 +173,7 @@ do
         fi
 
         let COUNT="${COUNT}+1"
-        echo -e "${BIYellow}$COUNT/$TO_GET${Color_Off}"
+        echo -e "get ${BIYellow}$COUNT/$TO_GET${Color_Off} $pic (#$COUNT)"
         get_line $line
 
     else
@@ -171,11 +185,11 @@ do
 done
 
 if [ $SKIP -gt 0 ]; then
-    echo -n -e "skipped getting ${BIPurple}$SKIP${Color_Off} files, "
+    echo -n -e "${BIWhite}${#URLS[*]}${Color_Off} total. Skipped getting ${BIPurple}$SKIP${Color_Off}. "
 fi
 
 if [ $COUNT -gt 0 ]; then
-    echo -e "got ${BICyan}$COUNT${Color_Off} new images."
+    echo -e "Got ${BICyan}$COUNT${Color_Off} new images."
 else
-    echo -e "there were ${BIRed}NO${Color_Off} new images."
+    echo -e "There were ${BIRed}NO${Color_Off} new images."
 fi
