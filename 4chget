@@ -52,7 +52,7 @@ SKIP=0
 if which wget >/dev/null; then HAVE_WGET=true; fi
 
 # 404 - proceed no further to prevent overwrites
-PAGE=`curl -b -j -c ~/.4chan_cookies.txt $ARG1`
+PAGE=`curl -b -j -c ~/.4chan_cookies.txt $ARG1 2>/dev/null`
 if echo "$PAGE" | grep -q "404 Not Found"; then
     echo -e "${BIRed}Page 404'd, no longer exists${Color_Off}"
     exit;
@@ -99,7 +99,7 @@ fi
 function get_line() {
     local line=$1
     if $HAVE_WGET; then
-        wget -qc $line &
+        wget -qc $line
     else
         curl -C - $line -o $pic
     fi
