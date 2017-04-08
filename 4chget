@@ -55,7 +55,10 @@ if which wget >/dev/null; then HAVE_WGET=true; fi
 PAGE=`curl -b -j -c ~/.4chan_cookies.txt $ARG1 2>/dev/null`
 if echo "$PAGE" | grep -q "404 Not Found"; then
     echo -e "${BIRed}Page 404'd, no longer exists${Color_Off}"
-    exit;
+    exit 0
+elif [ "k${PAGE}" == "k" ]; then
+    echo -e "${BIRed}Connection timed out or no data returned.${Color_Off}"
+    exit 0
 fi
 
 
