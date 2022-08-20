@@ -142,8 +142,8 @@ do
         next_line=''
     fi
 
-    #echo "$line" | grep -q "http" || line='http:'$line
-    #echo "$next_line" | grep -q "http" || next_line='http:'$next_line
+    echo "$line" | grep -q "http" || line='http:'$line
+    echo "$next_line" | grep -q "http" || next_line='http:'$next_line
 
     #pic=`echo $line | sed -r 's^http:\/\/'${IMAGE_HOST}'\/[a-z]+\/^^g'`
     #next_pic=`echo $next_line | sed -r 's^http:\/\/'${IMAGE_HOST}'\/[a-z]+\/^^g'`
@@ -159,6 +159,9 @@ do
     else
         next_pic=`echo $next_line | sed -r 's^\/\/'${IMAGE_HOST2}'\/[a-z]+\/^^g'`
     fi
+
+    pic=`echo $pic | sed -e 's/https://g' -e 's/http://g'`
+    next_pic=`echo $pic | sed -e 's/https://g' -e 's/http://g'`
 
     if [ "$VERBOSE" ]; then
         echo
