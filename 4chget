@@ -66,8 +66,8 @@ IMAGE_HOST1='i.4cdn.org'
 #is
 IMAGE_HOST2='is2.4chan.org'
 
-URLS_BIG1=`echo $PAGE | tr ' ' '\n' | grep -E \/\/${IMAGE_HOST1}\/[a-z]+\/[0-9]*\.[jpg\|png\|gif\|webm] | sed -e 's/href="//g' -e 's/"//g' | sed -e 's/https://g' -e 's/http://g' | uniq`
-URLS_BIG2=`echo $PAGE | tr ' ' '\n' | grep -E \/\/${IMAGE_HOST2}\/[a-z]+\/[0-9]*\.[jpg\|png\|gif\|webm] | sed -e 's/href="//g' -e 's/"//g' | sed -e 's/https://g' -e 's/http://g' | uniq`
+URLS_BIG1=`echo $PAGE | tr ' ' '\n' | grep -E \/\/${IMAGE_HOST1}\/[a-z]+\/[0-9]*\.[jpg\|png\|gif\|webm] | sed -e 's/href="//g' -e 's/"//g' | sed -e 's/https://g' -e 's/http://g' | uniq | sort`
+URLS_BIG2=`echo $PAGE | tr ' ' '\n' | grep -E \/\/${IMAGE_HOST2}\/[a-z]+\/[0-9]*\.[jpg\|png\|gif\|webm] | sed -e 's/href="//g' -e 's/"//g' | sed -e 's/https://g' -e 's/http://g' | uniq | sort`
 
 if [ $(echo $URLS_BIG1 | wc -l | awk '{print $1}') -le 2 ]; then
 	URLS_BIG1=`echo $URLS_BIG1 | tr ' ' '\n'`
