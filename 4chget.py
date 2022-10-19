@@ -25,12 +25,13 @@ def download_file( url, filename ):
 def progress_download( url, filename ):
     def print_progress_bar( fraction ):
         """ fraction is in range 0.0 to 1.0 """
-        barlen = 50
-        frac = int(fraction * 50)
+        barlen = 44
+        frac = int(fraction * barlen)
 
-        flen = 20 if len(filename) > 20 else len(filename)
+        ftruncate = 36
+        flen = ftruncate if len(filename) > ftruncate else len(filename)
         print('\r' * (barlen + 2 + flen + 1), end='')
-        print(filename[:20] + " ["+frac*'='+(barlen-frac)*' '+"]", end='')
+        print(filename[:ftruncate] + " ["+frac*'='+(barlen-frac)*' '+"]", end='')
 
     try:
         fd = open( filename, 'wb' )
@@ -62,15 +63,15 @@ def progress_download( url, filename ):
     return isfile( filename )
 
 
-def check_length_download( url, filename ):
+def check_length_download( url, filename, dl_func=download_file ):
     """ check the byte length of every file;
         download it if it doesn't exist,
         OR if the byte lengths don't match """
 
     if not os.path.isfile( filename ):
-        p( 'getting "{}" --> "{}"'.format(url, filename) )
-        download_file( url, filename )
-        time.sleep( 2 )
+        p( 'getting "{}"'.format(url) )
+        dl_func( url, filename )
+        time.sleep( 1 )
     else:
         p('!EXISTS "{}" Checking Length....'.format(filename))
         time.sleep( (2 ** 0.5) / 8 / 2 )
@@ -79,9 +80,9 @@ def check_length_download( url, filename ):
         H = requests.head( url )
         if H.headers.get('Content-Length', None):
             if H.headers['Content-Length'] != str(os.stat(filename).st_size):
-                perr( f'Size doesnt match server. Getting file again: "{filename}"' )
-                download_file(url, filename)
-                time.sleep( 2 )
+                perr( f'Size doesnt match server. Getting again: "{filename}"' )
+                dl_func(url, filename)
+                time.sleep( 1 )
 
 
 def str_indexes( needle, haystack ):
@@ -211,11 +212,9 @@ def main():
         check_length_download( url, final_filename )
 
 
-def fetch_url( url ):
-    #feed, feed_name = download_rss_xml( url )
-    name = url[url.rindex('/')+1:]
-    retval = progress_download(url, name)
-    return retval, name
+def fetch_url( url, saveto ):
+    retval = progress_download(url, saveto)
+    return retval
 
 
 def quoted_strings( sentinel, haystack, payload ):
@@ -234,7 +233,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         perr('usage: {} <URL>'.format(sys.argv[0]))
         sys.exit(0)
-    #print(sys.argv)
+    url = sys.argv[1]
 
     """
 - default: takes single argument, a 4chan url, and download all the images to a directory, also backs up the html. Default action for subsequent downloads is to skip downloading files we already have, but not check their size
@@ -247,21 +246,46 @@ if __name__ == '__main__':
 - start by working up a printf progress bar like apt-get
     """
 
-    ret, feed_filename = fetch_url(sys.argv[1])
+    # created directory
+    dirname = url[url.rindex('/')+1:]
+    feed_file = os.path.join(dirname, 'index.html')
+
+    if not isdir(dirname):
+        perr('creating directory {}'.format(dirname))
+        os.mkdir(dirname, mode=(7*8**2 + 5*8**1 + 5*8**0)) #755
+    else:
+        perr('directory {} exists'.format(dirname))
+
+    # fetch and save html
+    ret = fetch_url(url, feed_file)
     if not ret:
-        perr('failed to downloaded "{}"'.format(sys.argv[1]))
+        perr('failed to download "{}"'.format(url))
         sys.exit(1)
     else:
-        with open(feed_filename, "r") as f:
+        perr('saving "{}"'.format(feed_file))
+        with open(feed_file, "r") as f:
             html_string = f.read()
 
+    # collect target image paths
     TITLES1 = []
     sentinel = 'i.4cdn.org'
     quoted_strings(sentinel, html_string, TITLES1 )
     TITLES1 = [f'https://{sentinel}{match}' for match in TITLES1]
+
     TITLES2 = []
     sentinel = 'is2.4chan.org'
     quoted_strings(sentinel, html_string, TITLES2 )
     TITLES2 = [f'https://{sentinel}{match}' for match in TITLES2]
-    TITLES = TITLES1 + TITLES2
-    print(TITLES)
+
+    TITLES = []
+    for T_META in (TITLES1, TITLES2):
+        for t in T_META:
+            if t[t.rindex('.')-1] != 's' and t not in TITLES:
+                TITLES.append(t)
+
+    for index, imgurl in enumerate(TITLES):
+        print( f"{index+1}/{len(TITLES)} ", end='' )
+        basename = imgurl[imgurl.rindex('/')+1:]
+        check_length_download( imgurl, os.path.join(dirname, basename), dl_func=progress_download )
+
+
