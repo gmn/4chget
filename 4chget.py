@@ -16,9 +16,19 @@ import requests
 import sys
 import time
 
+silencePrinters = False
 
-p = lambda s: print(s)
-perr = lambda s: print(s, file=sys.stderr)
+def p(s, force=False):
+    if force:
+        print(s)
+    elif not silencePrinters:
+        print(s)
+
+def perr(s, force=False):
+    if force:
+        print(s, file=sys.stderr)
+    elif not silencePrinters:
+        print(s, file=sys.stderr)
 
 
 def download_file( url, filename ):
@@ -33,6 +43,8 @@ def progress_download( url, filename ):
         666 is couldn't write to file;
     """
     def print_progress_bar( fraction ):
+        if silencePrinters:
+            return
         """ fraction is in range 0.0 to 1.0 """
         barlen = 36
         filename_truncated = 44
@@ -73,7 +85,7 @@ def progress_download( url, filename ):
 
     if not file_expected_length:
         print_progress_bar(1.0)
-    print() # newline
+    p('') # newline
 
     fd.close()
     return req.status_code if isfile( filename ) else 505
@@ -97,7 +109,7 @@ def check_file_download( url, filename, dl_func=download_file, chkLen=False ):
             perr( f'server returned {retval}' )
         return False  # didn't exist
     else:
-        print('!EXISTS "{}"'.format(filename))
+        p('!EXISTS "{}"'.format(filename))
 
         if not chkLen:
             return True # did exist
@@ -185,12 +197,13 @@ def fetch_url( url, saveto ):
 
 
 def usage(sextra=None):
-        perr('usage: {} [options] <URL> [additional urls]'.format(sys.argv[0]))
-        perr('    options:')
-        perr('    --full                    recheck the length of each image and get any that are incorrect or partially downloaded')
-        perr('    --dirname <directory>     save to custom directory')
+        perr('usage: {} [options] <URL> [additional urls]'.format(sys.argv[0]), True)
+        perr('    options:', True)
+        perr('    --full                    recheck the length of each image and get any that are incorrect or partially downloaded', True)
+        perr('    --dirname <directory>     save to custom directory', True)
+        perr('    --silence                 run silently', True)
         if sextra:
-            perr(sextra)
+            perr(sextra, True)
 
 
 def archive_url( url, full_download=False, altDirname=None ):
@@ -254,11 +267,21 @@ def archive_url( url, full_download=False, altDirname=None ):
 
     if img_downloaded:
         perr(f'downloaded {img_downloaded} new file' + ('s' if img_downloaded > 1 else ''))
+        return dirname, img_downloaded
     else:
         perr('no new files')
+        return dirname, 0
+
+
+def print_summary(report):
+    print('{:33} {}'.format(report[0]['title'],  report[0]['downloads']))
+    print('============================================')
+    for row in report[1:]:
+        print('{:33} {}'.format(row['title'], row['downloads']))
 
 
 def main():
+    global silencePrinters
     if len(sys.argv) < 2:
         usage()
         sys.exit(0)
@@ -277,19 +300,32 @@ def main():
         perr('**doing a full download, checking the length of each file')
         time.sleep(1.5)
 
+    if '--silence' in Args:
+        silencePrinters = True
+        Args = Args[:Args.index('--silence')] + Args[Args.index('--silence')+1:]
+
     dirname = None
     if '--dirname' in Args:
         dirname = Args[Args.index('--dirname')+1]
         Args = Args[:Args.index('--dirname')] + Args[Args.index('--dirname')+2:]
         if len(Args[1:]) > 1:
-            perr('dirname replacement only available for single directory')
+            perr('Error: dirname replacement not available for multiple targets', True)
             sys.exit(1)
+
+    summary = [{'title':'title', 'downloads':'new files'}]
 
     for index, url in enumerate(Args[1:]):
         if index > 0:
             print()
             time.sleep(2)
-        archive_url(url, full_download=full_download, altDirname=dirname)
+        dname, dls = archive_url(url, full_download=full_download, altDirname=dirname)
+        if dls:
+            summary.append({'title':dname, 'downloads':str(dls)})
+
+    if not silencePrinters and len(summary) > 1:
+        print('\ndownload summary:')
+        print_summary(summary)
+
 
 if __name__ == '__main__':
     main()
