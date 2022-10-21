@@ -1,17 +1,13 @@
 
 """
-- default: takes single argument, a 4chan url, and download all the images to a directory, also backs up the html. Default action for subsequent downloads is to skip downloading files we already have, but not check their size
+4chget.py - simple script for getting all the images from 4chan threads. Takes a single argument of the 4chan "reply" URL.
 
-- checks for existence of dir, takes optional dir argument
-
-- should check local directory and separate urls of files we don't have. Then can report, "getting 11 new files."
-
-- optional argument forces 'Content-Length' checks against byte-size of each file to make sure
- all of them are complete
-
-X start by working up a printf progress bar like apt-get
-
-- takes an argument list of URLS
+TODO
+X accurately detects 404
+X takes an argument list of URLS
+X should check local directory and separate urls of files we don't have. Then can report, "getting 11 new files."
+X flag to name custom dest directory
+- cool ANSI colors
 """
 
 import json
@@ -29,10 +25,13 @@ def download_file( url, filename ):
     X = requests.get( url )
     with open( filename, 'wb' ) as f:
         f.write(X.content)
-    return isfile( filename )
+    return X.status_code if isfile( filename ) else 505
 
 
 def progress_download( url, filename ):
+    """ 505 is missing file;
+        666 is couldn't write to file;
+    """
     def print_progress_bar( fraction ):
         """ fraction is in range 0.0 to 1.0 """
         barlen = 36
@@ -40,14 +39,22 @@ def progress_download( url, filename ):
         frac = int(fraction * barlen)
         flen = filename_truncated if len(filename) > filename_truncated else len(filename)
         print('\r' * (barlen + 2 + flen + 1), end='')
-        print(filename[:filename_truncated] + " ["+frac*'='+(barlen-frac)*' '+"]", end='')
+        fname = filename if filename_truncated >= len(filename) else filename[len(filename)-filename_truncated:]
+        print(fname + " ["+frac*'='+(barlen-frac)*' '+"]", end='')
 
     try:
         fd = open( filename, 'wb' )
     except:
         perr(f"couldn't open {filename} for writing")
+        return 666
 
-    req = requests.get( url, stream=True )
+    try:
+        req = requests.get( url, stream=True )
+        if req.status_code != 200:
+            return req.status_code
+    except:
+        return 500
+
     file_expected_length = 0
     if req.headers.get('Content-Length', None):
         file_expected_length = int(req.headers['Content-Length'])
@@ -69,7 +76,7 @@ def progress_download( url, filename ):
     print() # newline
 
     fd.close()
-    return isfile( filename )
+    return req.status_code if isfile( filename ) else 505
 
 
 def check_file_download( url, filename, dl_func=download_file, chkLen=False ):
@@ -85,7 +92,9 @@ def check_file_download( url, filename, dl_func=download_file, chkLen=False ):
 
     if not os.path.isfile( filename ):
         p( 'getting "{}"'.format(url) )
-        dl_func( url, filename )
+        retval = dl_func( url, filename )
+        if retval != 200:
+            perr( f'server returned {retval}' )
         return False  # didn't exist
     else:
         print('!EXISTS "{}"'.format(filename))
@@ -101,7 +110,9 @@ def check_file_download( url, filename, dl_func=download_file, chkLen=False ):
                 a = str(H.headers['Content-Length'])
                 b = str(os.stat(filename).st_size)
                 print( f'Size doesnt match [{a} != {b}]. Re-getting' )
-                dl_func(url, filename)
+                retval = dl_func(url, filename)
+                if retval != 200:
+                    perr( f'server returned {retval}' )
                 return False # didn't checklen correctly
             else:
                 print(' ok')
@@ -174,50 +185,32 @@ def fetch_url( url, saveto ):
 
 
 def usage(sextra=None):
-        perr('usage: {} [options] <URL>'.format(sys.argv[0]))
+        perr('usage: {} [options] <URL> [additional urls]'.format(sys.argv[0]))
         perr('    options:')
-        perr('    --full    will cause 4chget to recheck the length of each image file')
+        perr('    --full                    recheck the length of each image and get any that are incorrect or partially downloaded')
+        perr('    --dirname <directory>     save to custom directory')
         if sextra:
             perr(sextra)
 
 
-def main():
-    if len(sys.argv) < 2:
-        usage()
-        sys.exit(0)
-
-    if '--help' in sys.argv:
-        usage()
-        sys.exit(0)
-
-    Args = sys.argv.copy()
-    full_download = False
-
-
-    #TODO FULL DOWNLOAD - check the length of each file
-    if '--full' in Args:
-        Args = Args[:Args.index('--full')] + Args[Args.index('--full')+1:]
-        full_download = True
-        perr('**doing a full download, checking the length of each file')
-        time.sleep(1.5)
-
-    url = Args[1]
-
+def archive_url( url, full_download=False, altDirname=None ):
     # created directory
     dirname = url[url.rindex('/')+1:]
+    if altDirname:
+        dirname = altDirname
     feed_file = os.path.join(dirname, 'index.html')
 
     if not isdir(dirname):
-        perr('creating directory {}'.format(dirname))
+        perr('creating directory "{}"'.format(dirname))
         os.mkdir(dirname, mode=(7*8**2 + 5*8**1 + 5*8**0)) #755
     else:
-        perr('directory {} exists'.format(dirname))
+        perr('directory "{}" exists'.format(dirname))
 
     # fetch and save html
     perr('saving "{}"'.format(feed_file))
-    ret = fetch_url(url, feed_file)
-    if not ret:
-        perr('failed to download "{}"'.format(url))
+    retval = fetch_url(url, feed_file)
+    if retval != 200:
+        perr('Failed to download "{}", with code {}'.format(url, retval))
         sys.exit(1)
     else:
         with open(feed_file, "r") as f:
@@ -235,20 +228,68 @@ def main():
     # clean out thumbs
     IMAGE_URLS_FILTERED = [x for x in IMAGE_URLS if x[x.rindex('.')-1] != 's']
 
-    img_downloaded = 0
+    # separate into files we have, and files we dont
+    urls = {'found':[], 'missing':[]}
+    for imgurl in IMAGE_URLS_FILTERED:
+        basename = imgurl[imgurl.rindex('/')+1:]
+        filename = os.path.join(dirname, basename)
+        if os.path.isfile( filename ):
+            urls['found'].append(imgurl)
+        else:
+            urls['missing'].append(imgurl)
 
-    for index, imgurl in enumerate(IMAGE_URLS_FILTERED):
-        print( f"{index+1}/{len(IMAGE_URLS_FILTERED)} ", end='' )
+    img_downloaded = 0
+    index = 1
+    for imgurl in urls['found'] + urls['missing']:
+        print( f"{index}/{len(IMAGE_URLS_FILTERED)} ", end='' )
+        index += 1
         basename = imgurl[imgurl.rindex('/')+1:]
         if not check_file_download( imgurl, os.path.join(dirname, basename), dl_func=progress_download, chkLen=full_download ):
             img_downloaded = img_downloaded + 1
             time.sleep( 1 ) # sleeping after getting files, not for confirming them
+        else:
+            #time.sleep( 1.0/33.3 )
+            pass
+
 
     if img_downloaded:
-        perr(f'got {img_downloaded} new files')
+        perr(f'downloaded {img_downloaded} new file' + ('s' if img_downloaded > 1 else ''))
     else:
         perr('no new files')
 
+
+def main():
+    if len(sys.argv) < 2:
+        usage()
+        sys.exit(0)
+
+    if '--help' in sys.argv:
+        usage()
+        sys.exit(0)
+
+    Args = sys.argv.copy()
+    full_download = False
+
+    #TODO FULL DOWNLOAD - check the length of each file
+    if '--full' in Args:
+        Args = Args[:Args.index('--full')] + Args[Args.index('--full')+1:]
+        full_download = True
+        perr('**doing a full download, checking the length of each file')
+        time.sleep(1.5)
+
+    dirname = None
+    if '--dirname' in Args:
+        dirname = Args[Args.index('--dirname')+1]
+        Args = Args[:Args.index('--dirname')] + Args[Args.index('--dirname')+2:]
+        if len(Args[1:]) > 1:
+            perr('dirname replacement only available for single directory')
+            sys.exit(1)
+
+    for index, url in enumerate(Args[1:]):
+        if index > 0:
+            print()
+            time.sleep(2)
+        archive_url(url, full_download=full_download, altDirname=dirname)
 
 if __name__ == '__main__':
     main()
