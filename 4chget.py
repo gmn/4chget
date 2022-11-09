@@ -39,8 +39,9 @@ def download_file( url, filename ):
 
 
 def progress_download( url, filename ):
-    """ 505 is missing file;
+    """ 505 is 'file missing after writing' (should never get)
         666 is couldn't write to file;
+        777 is requests threw error (probably offline)
     """
     def print_progress_bar( fraction ):
         if silencePrinters:
@@ -65,7 +66,7 @@ def progress_download( url, filename ):
         if req.status_code != 200:
             return req.status_code
     except:
-        return 500
+        return 777
 
     file_expected_length = 0
     if req.headers.get('Content-Length', None):
@@ -223,8 +224,9 @@ def archive_url( url, full_download=False, altDirname=None ):
     perr('saving "{}"'.format(feed_file))
     retval = fetch_url(url, feed_file)
     if retval != 200:
-        perr('Failed to download "{}", with code {}'.format(url, retval))
-        sys.exit(1)
+        #perr('Failed to download "{}", with code {}'.format(url, retval))
+        #sys.exit(1)
+        return dirname, retval, -1
     else:
         with open(feed_file, "r") as f:
             html_string = f.read()
@@ -267,17 +269,22 @@ def archive_url( url, full_download=False, altDirname=None ):
 
     if img_downloaded:
         perr(f'downloaded {img_downloaded} new file' + ('s' if img_downloaded > 1 else ''))
-        return dirname, img_downloaded
+        return dirname, retval, img_downloaded
     else:
         perr('no new files')
-        return dirname, 0
+        return dirname, retval, 0
 
 
 def print_summary(report):
-    print('{:33} {}'.format(report[0]['title'],  report[0]['downloads']))
-    print('============================================')
+    #print('{:33} {}'.format(report[0]['title'],  report[0]['downloads']))
+    #print('============================================')
+    rowlen = 0
     for row in report[1:]:
-        print('{:33} {}'.format(row['title'], row['downloads']))
+        if len(row['title']) > rowlen:
+            rowlen = len(row['title'])
+    fmt = '{:'+str(rowlen)+'}  {}'
+    for row in sorted(report[1:], key=lambda x:int(x['downloads']), reverse=True):
+        print(fmt.format(row['title'], row['downloads']))
 
 
 def main():
@@ -318,12 +325,16 @@ def main():
         if index > 0:
             print()
             time.sleep(2)
-        dname, dls = archive_url(url, full_download=full_download, altDirname=dirname)
+        dname, status, dls = archive_url(url, full_download=full_download, altDirname=dirname)
+        if dls < 0:
+            perr('Failed to download "{}", with code {}'.format(url, status))
+            #break
+            summary.append({'title':dname, 'downloads':"---Failed with 404---"})
         if dls:
             summary.append({'title':dname, 'downloads':str(dls)})
 
     if not silencePrinters and len(summary) > 1:
-        print('\ndownload summary:')
+        print('\nnew files:')
         print_summary(summary)
 
 
