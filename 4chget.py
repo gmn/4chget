@@ -330,7 +330,7 @@ def main():
             perr('Failed to download "{}", with code {}'.format(url, status))
             #break
             summary.append({'title':dname, 'downloads':"---Failed with 404---"})
-        if dls:
+        elif dls > 0:
             summary.append({'title':dname, 'downloads':str(dls)})
 
     if not silencePrinters and len(summary) > 1:
