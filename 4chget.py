@@ -276,15 +276,21 @@ def archive_url( url, full_download=False, altDirname=None ):
 
 
 def print_summary(report):
-    #print('{:33} {}'.format(report[0]['title'],  report[0]['downloads']))
-    #print('============================================')
+    print('\nsummary:')
+    hasText = False
     rowlen = 0
     for row in report[1:]:
         if len(row['title']) > rowlen:
             rowlen = len(row['title'])
+        if type(row['downloads']) == type('lookAtMeImAString'):
+            hasText = True
     fmt = '{:'+str(rowlen)+'}  {}'
-    for row in sorted(report[1:], key=lambda x:int(x['downloads']), reverse=True):
-        print(fmt.format(row['title'], row['downloads']))
+    if hasText:
+        for row in report[1:]:
+            print(fmt.format(row['title'], row['downloads']))
+    else:
+        for row in sorted(report[1:], key=lambda x:x['downloads'], reverse=True):
+            print(fmt.format(row['title'], row['downloads']))
 
 
 def main():
@@ -331,10 +337,9 @@ def main():
             #break
             summary.append({'title':dname, 'downloads':"---Failed with 404---"})
         elif dls > 0:
-            summary.append({'title':dname, 'downloads':str(dls)})
+            summary.append({'title':dname, 'downloads':dls})
 
     if not silencePrinters and len(summary) > 1:
-        print('\nnew files:')
         print_summary(summary)
 
 
